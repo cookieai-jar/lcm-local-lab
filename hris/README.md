@@ -105,6 +105,13 @@ provider. If `LCM-Test-HRIS` already exists without `provisioning: true` (e.g. i
 an earlier `--no_push` experiment against an older `oaa-runner` version, or manually), it has to be
 deleted and re-created in the Veza console for this flag to apply.
 
+**Shared tenant note**: `config.yaml` always creates the provider as `LCM-Test-HRIS` — if several
+people share one Veza tenant (e.g. `your-tenant.vezacloud.com`), rename it after creation to disambiguate
+(e.g. `LCM-Test-HRIS-<your initials>`). Renaming in the console doesn't affect `provisioning: true`
+or anything else about the provider. When building the policy in step 4 below, select the provider
+under whatever name it actually has in your console, not necessarily the literal string
+`LCM-Test-HRIS`.
+
 ### 2. Register `openldap` as an LDAP integration
 
 In the Veza console, go to **Integrations → Add Integration**, search for "LDAP", and configure
@@ -143,7 +150,8 @@ integration can be used as an LCM target.
 ### 4. Create the policy
 
 1. **LCM → Policies → Create Policy.**
-2. Name it (e.g. `LCM-Test: HRIS birthright → OpenLDAP`), and select **`LCM-Test-HRIS`** as the
+2. Name it (e.g. `LCM-Test: HRIS birthright → OpenLDAP`), and select your `LCM-Test-HRIS` provider
+   (whatever it's actually named in your console — see the shared-tenant note above) as the
    **Primary Identity Source**.
 3. In the draft policy, open **Workflows → Create workflow** and add a **Sync Identities** action
    mapping HRIS employee fields to LDAP attributes.
