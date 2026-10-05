@@ -28,7 +28,7 @@ hris-validate: ## Validate hris/config.yaml against Veza (also checks connectivi
 
 # Usage: make hris-run SCENARIO=baseline              (local build only, no push)
 #        make hris-run SCENARIO=joiner PUSH=true      (pushes to VEZA_URL)
-hris-run: ## Run an HRIS scenario. SCENARIO=baseline|joiner|mover|leaver, PUSH=true to push.
+hris-run: ## Run an HRIS scenario. SCENARIO=baseline|joiner|mover|leaver|rehire|convert, PUSH=true to push.
 	docker compose run --rm \
 		-e LCM_SCENARIO=$(SCENARIO) \
 		-e MOCK_RESULTS=true \

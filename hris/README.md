@@ -16,7 +16,7 @@ config.yaml                     HRIS provider, Employee + Group sources (all map
 modules/lcm_test_hris.py        fetch(): BaseURLSession + maybe_mock_it + lazy_dict_table
 modules/lcm_test_hris_mocks.py  @mock_response for /employees and /groups; picks fixture by LCM_SCENARIO
 modules/lcm_test_hris_hooks.py  PRE_RUN guard: refuses any run unless VEZA_URL host is allowlisted
-fixtures/{baseline,joiner,mover,leaver}.json
+fixtures/{baseline,joiner,mover,leaver,rehire,convert}.json
 requirements.txt                extra Python deps for this connector; installed inside the hris
                                  container automatically (see root docker-compose.yml / Dockerfile)
 ```
@@ -32,19 +32,19 @@ root) drive it.
 |---|---|---|---|
 | E1001 | Root manager, very long hyphenated name | active FTE, Leadership | — |
 | E1002 | Siobhán O'Connor: FTE (apostrophe, accent) | active, Engineering / Software Engineer | — |
-| E1003 | José Núñez: FTE (accents) | active, Finance / Financial Analyst | — |
-| E1004 | Priya Raman: contractor | active, `employment_types: [CONTRACTOR]` | — |
+| E1003 | José Núñez: FTE (accents), later FTE → contractor | active, Finance / Financial Analyst | `convert` → `employment_types: [CONTRACTOR]`, job_title "Financial Analyst (Contract)" |
+| E1004 | Priya Raman: contractor, later contractor → FTE | active, `employment_types: [CONTRACTOR]` | `convert` → `employment_types: [FULL_TIME]`, job_title "QA Engineer" |
 | E1005 | Anne-Marie Dubois-Laurent: mover (hyphens) | active, Sales / Account Executive | `mover` → Engineering / Solutions Engineer |
 | E1006 | Kenji Watanabe: leaver | active, Support | `leaver` → terminated, termination_date 2026-10-01 |
-| E1007 | Olu Adeyemi: already terminated | terminated | — |
+| E1007 | Olu Adeyemi: already terminated, later rehired | terminated | `rehire` → active, new hire_date |
 | E1008 | Zoë Åkesson: pre-hire joiner | `pre-hire`, `is_active: false`, start 2026-10-05 | `joiner` → active |
 | E1009 | Mateus Ferreira: new hire | (absent) | `joiner` → added, active |
 
 Every employee has `is_test_account = true`, an `@example.com` email, membership in the
 `LCM-Test` group, and a `LCM-Test <Function>` department. Managers point only at fake employees.
 
-Scenarios are cumulative: baseline → joiner → mover → leaver, each the previous dataset plus one
-change. Run them in that order.
+Scenarios are cumulative: baseline → joiner → mover → leaver → rehire → convert, each the
+previous dataset plus one or two changes. Run them in that order.
 
 Attributes a birthright rule can use: `department`, `job_title`, `work_location`,
 `employment_types` (FULL_TIME / CONTRACTOR), `managers`, `start_date` (hire date),
@@ -58,17 +58,17 @@ Custom properties: `hire_date`, `employment_type` (FTE / Contractor), `is_test_a
 make hris-validate
 
 # 2. Local build, no Veza contact; writes hris/lcm-test-hris-<timestamp>.json
-make hris-run SCENARIO=baseline        # then joiner, mover, leaver
+make hris-run SCENARIO=baseline        # then joiner, mover, leaver, rehire, convert
 
 # 3. Inspect the payload
 f=$(ls -t hris/lcm-test-hris-*.json | head -1)
 jq '.employees | length' "$f"
 jq -r '.employees[] | "\(.id)\t\(.employment_status)\tactive=\(.is_active)\t\(.department.id)\t\(.job_title)"' "$f"
 jq '[.employees[] | select(.custom_properties.is_test_account != true)] | length' "$f"   # expect 0
-jq '.employees[] | select(.id == "E1008")' "$f"   # joiner;  E1005 for mover, E1006 for leaver
+jq '.employees[] | select(.id == "E1008")' "$f"   # joiner;  E1005 for mover, E1006 for leaver, E1007 for rehire, E1003/E1004 for convert
 
 # 4. Push to the sandbox (only after review)
-make hris-run SCENARIO=baseline PUSH=true    # then joiner, mover, leaver
+make hris-run SCENARIO=baseline PUSH=true    # then joiner, mover, leaver, rehire, convert
 ```
 
 Expected results:
@@ -79,6 +79,8 @@ Expected results:
 | joiner | 9 | 8 / 0 / 1 |
 | mover | 9 | 8 / 0 / 1 |
 | leaver | 9 | 7 / 0 / 2 |
+| rehire | 9 | 8 / 0 / 1 |
+| convert | 9 | 8 / 0 / 1 |
 
 Notes:
 - `--dry_run=True` is not offline: it still looks up the provider in Veza and creates it if it

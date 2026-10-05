@@ -1,0 +1,275 @@
+{
+  "scenario": "convert",
+  "description": "Rehire state, plus Priya Raman (contractor) converts to FTE and José Núñez (FTE) converts to contractor.",
+  "groups": [
+    {
+      "unique_id": "LCM-Test",
+      "name": "LCM-Test",
+      "group_type": "Team"
+    },
+    {
+      "unique_id": "LCM-Test Leadership",
+      "name": "LCM-Test Leadership",
+      "group_type": "Department"
+    },
+    {
+      "unique_id": "LCM-Test Engineering",
+      "name": "LCM-Test Engineering",
+      "group_type": "Department"
+    },
+    {
+      "unique_id": "LCM-Test Finance",
+      "name": "LCM-Test Finance",
+      "group_type": "Department"
+    },
+    {
+      "unique_id": "LCM-Test Sales",
+      "name": "LCM-Test Sales",
+      "group_type": "Department"
+    },
+    {
+      "unique_id": "LCM-Test Support",
+      "name": "LCM-Test Support",
+      "group_type": "Department"
+    },
+    {
+      "unique_id": "LCM-Test Marketing",
+      "name": "LCM-Test Marketing",
+      "group_type": "Department"
+    }
+  ],
+  "employees": [
+    {
+      "unique_id": "E1001",
+      "employee_number": "1001",
+      "first_name": "Bartholomew Alexander Maximilian",
+      "last_name": "Featherstonehaugh-Wolfeschlegelsteinhausen",
+      "email": "bartholomew.featherstonehaugh@example.com",
+      "employment_status": "active",
+      "hire_date": "2015-03-02T00:00:00Z",
+      "termination_date": null,
+      "department": "LCM-Test Leadership",
+      "job_title": "Director of Test Operations",
+      "work_location": "New York, NY",
+      "employment_type": "FTE",
+      "employment_types": [
+        "FULL_TIME"
+      ],
+      "managers": [],
+      "groups": [
+        "LCM-Test",
+        "LCM-Test Leadership"
+      ],
+      "is_test_account": true,
+      "persona": "root_manager_long_name"
+    },
+    {
+      "unique_id": "E1002",
+      "employee_number": "1002",
+      "first_name": "Siobhán",
+      "last_name": "O'Connor",
+      "email": "siobhan.oconnor@example.com",
+      "employment_status": "active",
+      "hire_date": "2021-06-14T00:00:00Z",
+      "termination_date": null,
+      "department": "LCM-Test Engineering",
+      "job_title": "Software Engineer",
+      "work_location": "Dublin, IE",
+      "employment_type": "FTE",
+      "employment_types": [
+        "FULL_TIME"
+      ],
+      "managers": [
+        "E1001"
+      ],
+      "groups": [
+        "LCM-Test",
+        "LCM-Test Engineering"
+      ],
+      "is_test_account": true,
+      "persona": "fte_engineering"
+    },
+    {
+      "unique_id": "E1003",
+      "employee_number": "1003",
+      "first_name": "José",
+      "last_name": "Núñez",
+      "email": "jose.nunez@example.com",
+      "employment_status": "active",
+      "hire_date": "2022-01-10T00:00:00Z",
+      "termination_date": null,
+      "department": "LCM-Test Finance",
+      "job_title": "Financial Analyst (Contract)",
+      "work_location": "Austin, TX",
+      "employment_type": "Contractor",
+      "employment_types": [
+        "CONTRACTOR"
+      ],
+      "managers": [
+        "E1001"
+      ],
+      "groups": [
+        "LCM-Test",
+        "LCM-Test Finance"
+      ],
+      "is_test_account": true,
+      "persona": "fte_to_contractor"
+    },
+    {
+      "unique_id": "E1004",
+      "employee_number": "1004",
+      "first_name": "Priya",
+      "last_name": "Raman",
+      "email": "priya.raman@example.com",
+      "employment_status": "active",
+      "hire_date": "2025-08-04T00:00:00Z",
+      "termination_date": null,
+      "department": "LCM-Test Engineering",
+      "job_title": "QA Engineer",
+      "work_location": "Remote - US",
+      "employment_type": "FTE",
+      "employment_types": [
+        "FULL_TIME"
+      ],
+      "managers": [
+        "E1002"
+      ],
+      "groups": [
+        "LCM-Test",
+        "LCM-Test Engineering"
+      ],
+      "is_test_account": true,
+      "persona": "contractor_to_fte"
+    },
+    {
+      "unique_id": "E1005",
+      "employee_number": "1005",
+      "first_name": "Anne-Marie",
+      "last_name": "Dubois-Laurent",
+      "email": "anne-marie.dubois-laurent@example.com",
+      "employment_status": "active",
+      "hire_date": "2023-04-17T00:00:00Z",
+      "termination_date": null,
+      "department": "LCM-Test Engineering",
+      "job_title": "Solutions Engineer",
+      "work_location": "Chicago, IL",
+      "employment_type": "FTE",
+      "employment_types": [
+        "FULL_TIME"
+      ],
+      "managers": [
+        "E1001"
+      ],
+      "groups": [
+        "LCM-Test",
+        "LCM-Test Engineering"
+      ],
+      "is_test_account": true,
+      "persona": "mover"
+    },
+    {
+      "unique_id": "E1006",
+      "employee_number": "1006",
+      "first_name": "Kenji",
+      "last_name": "Watanabe",
+      "email": "kenji.watanabe@example.com",
+      "employment_status": "terminated",
+      "hire_date": "2019-09-09T00:00:00Z",
+      "termination_date": "2026-10-01T00:00:00Z",
+      "department": "LCM-Test Support",
+      "job_title": "Support Specialist",
+      "work_location": "Seattle, WA",
+      "employment_type": "FTE",
+      "employment_types": [
+        "FULL_TIME"
+      ],
+      "managers": [
+        "E1001"
+      ],
+      "groups": [
+        "LCM-Test",
+        "LCM-Test Support"
+      ],
+      "is_test_account": true,
+      "persona": "leaver"
+    },
+    {
+      "unique_id": "E1007",
+      "employee_number": "1007",
+      "first_name": "Olu",
+      "last_name": "Adeyemi",
+      "email": "olu.adeyemi@example.com",
+      "employment_status": "active",
+      "hire_date": "2026-09-15T00:00:00Z",
+      "termination_date": null,
+      "department": "LCM-Test Marketing",
+      "job_title": "Marketing Coordinator",
+      "work_location": "Denver, CO",
+      "employment_type": "FTE",
+      "employment_types": [
+        "FULL_TIME"
+      ],
+      "managers": [
+        "E1001"
+      ],
+      "groups": [
+        "LCM-Test",
+        "LCM-Test Marketing"
+      ],
+      "is_test_account": true,
+      "persona": "rehire"
+    },
+    {
+      "unique_id": "E1008",
+      "employee_number": "1008",
+      "first_name": "Zoë",
+      "last_name": "Åkesson",
+      "email": "zoe.akesson@example.com",
+      "employment_status": "active",
+      "hire_date": "2026-10-05T00:00:00Z",
+      "termination_date": null,
+      "department": "LCM-Test Engineering",
+      "job_title": "Data Engineer",
+      "work_location": "Austin, TX",
+      "employment_type": "FTE",
+      "employment_types": [
+        "FULL_TIME"
+      ],
+      "managers": [
+        "E1002"
+      ],
+      "groups": [
+        "LCM-Test",
+        "LCM-Test Engineering"
+      ],
+      "is_test_account": true,
+      "persona": "pre_hire_joiner"
+    },
+    {
+      "unique_id": "E1009",
+      "employee_number": "1009",
+      "first_name": "Mateus",
+      "last_name": "Ferreira",
+      "email": "mateus.ferreira@example.com",
+      "employment_status": "active",
+      "hire_date": "2026-10-01T00:00:00Z",
+      "termination_date": null,
+      "department": "LCM-Test Finance",
+      "job_title": "Financial Analyst",
+      "work_location": "Austin, TX",
+      "employment_type": "FTE",
+      "employment_types": [
+        "FULL_TIME"
+      ],
+      "managers": [
+        "E1003"
+      ],
+      "groups": [
+        "LCM-Test",
+        "LCM-Test Finance"
+      ],
+      "is_test_account": true,
+      "persona": "new_hire"
+    }
+  ]
+}
