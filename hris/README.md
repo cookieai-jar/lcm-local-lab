@@ -146,15 +146,30 @@ integration can be used as an LCM target.
 3. In the draft policy, open **Workflows → Create workflow** and add a **Sync Identities** action
    mapping HRIS employee fields to LDAP attributes.
 
-That last mapping step has an open design question before it can be written down concretely:
-`ldap/tree.yaml`'s OUs (`IT`, `Marketing`) are unrelated seed data used to smoke-test the
-rendering pipeline — they don't match the HRIS fixtures' departments (`LCM-Test Leadership` /
-`Engineering` / `Finance` / `Sales` / `Support` / `Marketing`). Before building the Sync Identities
-mapping, decide: provision every synced employee into one fixed OU regardless of department, or
-extend `ldap/tree.yaml` with OUs that mirror the HRIS department names so birthright-by-department
-is actually demonstrable end-to-end. Whichever is chosen, DN matching also needs a
-`FROM_ENTITY_ATTRIBUTE` lookup (LDAP matches by DN; HRIS's `unique_id`/`employee_number` isn't a
-DN), per [Provisioning for LDAP](https://docs.veza.com/4yItIzMvkpAvMVFAamTf/integrations/integrations/ldap/provisioning).
+This lab uses **one fixed OU for every synced employee** regardless of department — the common
+real-world pattern unless an org is geographically distributed (region/country OUs), which this
+lab doesn't model. `ldap/tree.yaml` defines `Employees` for this; `IT`/`Marketing` are unrelated
+seed data used to smoke-test the rendering pipeline, not an LCM target.
+
+In the Sync Identities action's **Action Synced Attributes**, map at least:
+
+| Destination attribute | Formatter (source → value) | Why |
+|---|---|---|
+| `id` (the DN) | `uid={employee_number},ou=Employees,dc=example,dc=org` | replace `dc=example,dc=org` with your actual `$LDAP_BASE_DN`; this is the only universally required attribute for LDAP user creation |
+| `uid` | `{employee_number}` | LDAP convention expects the entry to also carry the attribute matching its own RDN (see how `scripts/render_ldap_bootstrap.py` writes the seed users) |
+| `cn` | `{full_name}` | required by `inetOrgPerson` |
+| `sn` | `{last_name}` | required by `inetOrgPerson` |
+| `mail` | `{email}` | |
+
+Set **Action Unique Identifier** to `id` (the DN) so re-runs match the same entry instead of
+creating duplicates — HRIS's `unique_id`/`employee_number` isn't itself an LDAP identifier, so the
+DN Formatter above is what ties a given employee to a given LDAP entry across runs.
+
+Not yet verified empirically: whether a newly-created entry automatically gets the `accountStatus`
+auxiliary class (needed for `is-active` to be settable) just from the integration's configured
+Users Object Class, or whether `objectClass` needs its own explicit mapping here. Check this when
+you actually dry-run the workflow — if deactivation fails on a newly-created user, this is the
+first thing to check.
 
 4. Dry-run the workflow against a representative HRIS identity, publish the version, then
    **LCM → Policies → (policy) → ⋮ → Enable**. Policies run on source extraction — a dry run does

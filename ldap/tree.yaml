@@ -14,6 +14,8 @@
 organizational_units:
   - IT
   - Marketing
+  - Employees   # LCM provisioning target: every HRIS-synced user lands here, regardless
+                # of department (see hris/README.md's "Setting up the LCM policy" section)
 
 users:
   - uid: johndoe
