@@ -13,13 +13,40 @@ system, registered with your Veza tenant via a Veza Insight Point.
 Only Homebrew, Colima, and Docker are required on the host — the HRIS push and the
 LDAP bootstrap data generation both run as one-shot containers, not local Python.
 
+## One-time setup: create a Veza Insight Point
+
+`DP_REGISTER_KEY` (needed for `.env`, below) comes from a Veza Insight Point you
+register once per Veza tenant — it isn't something you invent locally, and it's
+separate from `VEZA_API_KEY`. The `insight_point` container in this lab uses it to
+register itself and open its outbound tunnel to your tenant. Do this once; the same
+key is reused across every `make down` / `make up` after that.
+
+1. Log in to the Veza console with an administrator account.
+2. Go to **Integrations → Insight Points**.
+3. Click **Create**.
+4. Enter a **Name** for this Insight Point (e.g. `lcm-local-lab`).
+5. Click **Generate Key**.
+6. Copy the key immediately — **Veza cannot show it to you again if you lose it.**
+7. Paste it into `.env` as `DP_REGISTER_KEY` (see Quickstart below).
+
+There's no further "activate" step on the console side. The next time `make up`
+starts the `insight_point` container, it registers itself with that key and should
+show status **OK** on the Insight Points page within a minute or so — subject to the
+Zscaler caveat in Troubleshooting below, which affects the online indicator but not
+registration itself.
+
+If you lose the key: create a new Insight Point entry (or regenerate on the existing
+one, if your console offers it), copy the new key into `.env`, then
+`docker compose up -d insightpoint --force-recreate` (or `make down && make up`) to
+pick it up.
+
 ## Quickstart
 
 ```bash
 git clone --recurse-submodules <this-repo-url>
 cd lcm-local-lab
 cp .env.example .env && chmod 600 .env
-# edit .env: fill in VEZA_URL, VEZA_API_KEY, DP_REGISTER_KEY, LDAP_ADMIN_PASSWORD
+# edit .env: fill in VEZA_URL, VEZA_API_KEY, DP_REGISTER_KEY (see "One-time setup" above), LDAP_ADMIN_PASSWORD
 
 make install   # Homebrew/Colima/docker/docker-compose if missing, submodules, start Colima
 make up        # render ldap/tree.yaml -> bootstrap.ldif, bring up openldap + phpldapadmin + insight_point
