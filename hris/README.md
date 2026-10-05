@@ -90,9 +90,72 @@ Notes:
 - `oaa validate_payload` targets CUSTOM_APP payloads and misreports HRIS ones (0 LocalUsers).
   Use the jq checks above instead.
 
-## LCM provisioning source
+## Setting up the LCM policy
+
+Everything below is one-time console setup, done after the lab is up (root README's Quickstart)
+and after `LCM-Test-HRIS` exists as a Veza provider (see the note on that below).
+
+### 1. `LCM-Test-HRIS` as an LCM source
 
 `app.options.provisioning: true` is sent in the provider-create call, which makes the provider
 selectable as an LCM source (Lifecycle Management → Policies → Create Policy → Configure Source).
-It applies **only when the provider is first created**. If `LCM-Test-HRIS` already exists
-without it, the provider has to be deleted and re-created.
+It applies **only when the provider is first created** — this happens on the first **real** push
+(`make hris-run SCENARIO=baseline PUSH=true`); a `--no_push` build-only run never creates the
+provider. If `LCM-Test-HRIS` already exists without `provisioning: true` (e.g. it was created by
+an earlier `--no_push` experiment against an older `oaa-runner` version, or manually), it has to be
+deleted and re-created in the Veza console for this flag to apply.
+
+### 2. Register `openldap` as an LDAP integration
+
+In the Veza console, go to **Integrations → Add Integration**, search for "LDAP", and configure
+it with this lab's specifics:
+
+| Field | Value | Why |
+|---|---|---|
+| Insight Point | the one created in the root README's "One-time setup" | lets Veza reach `openldap`, which isn't publicly exposed |
+| IDP Name | `LCM-Test-OpenLDAP` (or similar) | internal identifier only |
+| LDAP URL | `ldap://openldap:389` | `openldap` is the container hostname on the `ldap_network` Docker network the Insight Point shares with it; `LDAP_TLS=false` in `docker-compose.yml`, so no `ldaps://`/CA cert for this lab |
+| Users Base DN | `$LDAP_BASE_DN` (e.g. `dc=example,dc=org`) | covers every OU in `ldap/tree.yaml`, not just one |
+| Groups Base DN | same as Users Base DN | `ldap/tree.yaml` doesn't define any LDAP groups yet — see the open question in the root README/plan about whether to add them |
+| Bind DN or User | `cn=admin,$LDAP_BASE_DN` | osixia/openldap's auto-created admin account |
+| Bind Password | `$LDAP_ADMIN_PASSWORD` | from `.env` |
+| Users Object Class | `inetOrgPerson,accountStatus` | **both**, per the comment at the top of `ldap/custom.schema` — `accountStatus` is the AUXILIARY class carrying `is-active`; omitting it from this list means the connector's search filter won't match these users |
+| Groups Object Class | leave default (`groupOfUniqueNames`) | unused until `ldap/tree.yaml` defines groups |
+
+Click **Create Integration** and wait for the first extraction to succeed — required before this
+integration can be used as an LCM target.
+
+### 3. Enable provisioning on it
+
+1. Open the `LCM-Test-OpenLDAP` integration → **Edit**.
+2. Check **Enable usage for Provisioning** → **Save Configuration**.
+3. Set the activation-detection strategy to match `ldap/custom.schema`'s `is-active` attribute
+   (Strategy A — `is-active` is a positive "active" flag, not an "inactive/locked" one):
+   - `active_user_attribute`: `is-active`
+   - `active_user_value_when_active`: `TRUE`
+   - `active_user_value_when_inactive`: `FALSE`
+
+   (matches the literal strings `scripts/render_ldap_bootstrap.py` writes — `is-active: TRUE` /
+   `is-active: FALSE`.)
+
+### 4. Create the policy
+
+1. **LCM → Policies → Create Policy.**
+2. Name it (e.g. `LCM-Test: HRIS birthright → OpenLDAP`), and select **`LCM-Test-HRIS`** as the
+   **Primary Identity Source**.
+3. In the draft policy, open **Workflows → Create workflow** and add a **Sync Identities** action
+   mapping HRIS employee fields to LDAP attributes.
+
+That last mapping step has an open design question before it can be written down concretely:
+`ldap/tree.yaml`'s OUs (`IT`, `Marketing`) are unrelated seed data used to smoke-test the
+rendering pipeline — they don't match the HRIS fixtures' departments (`LCM-Test Leadership` /
+`Engineering` / `Finance` / `Sales` / `Support` / `Marketing`). Before building the Sync Identities
+mapping, decide: provision every synced employee into one fixed OU regardless of department, or
+extend `ldap/tree.yaml` with OUs that mirror the HRIS department names so birthright-by-department
+is actually demonstrable end-to-end. Whichever is chosen, DN matching also needs a
+`FROM_ENTITY_ATTRIBUTE` lookup (LDAP matches by DN; HRIS's `unique_id`/`employee_number` isn't a
+DN), per [Provisioning for LDAP](https://docs.veza.com/4yItIzMvkpAvMVFAamTf/integrations/integrations/ldap/provisioning).
+
+4. Dry-run the workflow against a representative HRIS identity, publish the version, then
+   **LCM → Policies → (policy) → ⋮ → Enable**. Policies run on source extraction — a dry run does
+   not test LDAP connectivity.
