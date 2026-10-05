@@ -116,7 +116,7 @@ it with this lab's specifics:
 | IDP Name | `LCM-Test-OpenLDAP` (or similar) | internal identifier only |
 | LDAP URL | `ldap://openldap:389` | `openldap` is the container hostname on the `ldap_network` Docker network the Insight Point shares with it; `LDAP_TLS=false` in `docker-compose.yml`, so no `ldaps://`/CA cert for this lab |
 | Users Base DN | `$LDAP_BASE_DN` (e.g. `dc=example,dc=org`) | covers every OU in `ldap/tree.yaml`, not just one |
-| Groups Base DN | same as Users Base DN | `ldap/tree.yaml` doesn't define any LDAP groups yet — see the open question in the root README/plan about whether to add them |
+| Groups Base DN | same as Users Base DN | `ldap/tree.yaml` doesn't define any LDAP groups yet |
 | Bind DN or User | `cn=admin,$LDAP_BASE_DN` | osixia/openldap's auto-created admin account |
 | Bind Password | `$LDAP_ADMIN_PASSWORD` | from `.env` |
 | Users Object Class | `inetOrgPerson,accountStatus` | **both**, per the comment at the top of `ldap/custom.schema` — `accountStatus` is the AUXILIARY class carrying `is-active`; omitting it from this list means the connector's search filter won't match these users |
@@ -124,6 +124,8 @@ it with this lab's specifics:
 
 Click **Create Integration** and wait for the first extraction to succeed — required before this
 integration can be used as an LCM target.
+
+![LDAP integration Configure page filled in for this lab, including the is-active activation strategy from step 3 below](images/ldap-integration-setup.png)
 
 ### 3. Enable provisioning on it
 
