@@ -1,0 +1,5 @@
+.env
+ldap/.generated/
+hris/__pycache__/
+hris/lcm-test-hris-*.json
+.DS_Store

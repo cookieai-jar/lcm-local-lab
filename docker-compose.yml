@@ -1,0 +1,85 @@
+networks:
+  ldap_network:
+    driver: bridge
+
+services:
+  openldap:
+    image: osixia/openldap:1.5.0
+    container_name: openldap
+    environment:
+      LDAP_BASE_DN: "${LDAP_BASE_DN}"
+      LDAP_ORGANISATION: "${LDAP_ORGANISATION}"
+      LDAP_DOMAIN: "${LDAP_DOMAIN}"
+      LDAP_ADMIN_PASSWORD: "${LDAP_ADMIN_PASSWORD}"
+      LDAP_TLS: "false"             # deactivate TLS for the LDAP server
+    volumes:
+      - ./ldap/custom.schema:/container/service/slapd/assets/config/bootstrap/schema/custom/custom.schema
+      - ./ldap/.generated/bootstrap.ldif:/container/service/slapd/assets/config/bootstrap/ldif/custom/50-bootstrap.ldif
+    networks:
+      - ldap_network
+    ports:
+      - "389:389"                   # default port for unsecured LDAP
+    ulimits:
+      nofile: 1024
+    command: --copy-service
+    restart: unless-stopped
+
+  phpldapadmin:
+    image: osixia/phpldapadmin:0.9.0
+    container_name: phpldapadmin
+    environment:
+      PHPLDAPADMIN_LDAP_HOSTS: openldap
+      PHPLDAPADMIN_HTTPS: "false"   # deactivate HTTPS
+    networks:
+      - ldap_network
+    ports:
+      - "8081:80"
+    restart: unless-stopped
+    depends_on:
+      - openldap
+
+  insightpoint:
+    image: public.ecr.aws/veza/insight_point:latest
+    container_name: insight_point
+    environment:
+      DP_REGISTER_KEY: "${DP_REGISTER_KEY}"
+    networks:
+      - ldap_network
+    restart: unless-stopped
+
+  # One-shot: renders ldap/tree.yaml + $LDAP_BASE_DN/$LDAP_DOMAIN into
+  # ldap/.generated/bootstrap.ldif. Not part of the long-running lab, so it's
+  # excluded from `docker compose up -d` via the "tools" profile and invoked
+  # explicitly by `make render`.
+  renderer:
+    image: python:3.12-slim
+    working_dir: /work
+    volumes:
+      - ./:/work
+    environment:
+      - LDAP_BASE_DN
+      - LDAP_DOMAIN
+    command: sh -c "pip install --quiet pyyaml && python scripts/render_ldap_bootstrap.py"
+    profiles:
+      - tools
+
+  # One-shot: the HRIS mock-data push, built from the oaa-runner-internal
+  # submodule's own Dockerfile (installs the oaa-runner package from its src/,
+  # then runit.sh installs ./hris/requirements.txt and execs `oaa "$@"`).
+  # Excluded from `docker compose up -d` via the "tools" profile; invoked by
+  # `make hris-validate` / `make hris-run`.
+  hris:
+    build:
+      context: ./third_party/oaa-runner-internal
+      dockerfile: Dockerfile
+    image: lcm-local-lab-hris:local
+    volumes:
+      - ./hris:/connector
+    environment:
+      - VEZA_API_KEY
+      - VEZA_URL
+      - VEZA_URL_ALLOWLIST
+      - LCM_SCENARIO
+      - MOCK_RESULTS
+    profiles:
+      - tools

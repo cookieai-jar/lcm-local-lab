@@ -1,0 +1,24 @@
+# custom.schema
+# Place this file at: ./ldap/custom.schema
+#
+# OID arc: 1.3.6.1.4.1.99999 (private/testing — replace if needed)
+#
+# Note: LDAP attribute names (RFC 4512) allow only letters, digits, and hyphens.
+# Underscores are not permitted — attribute is named 'is-active'.
+#
+# accountStatus is an AUXILIARY objectClass. Veza's LCM LDAP connector must
+# include it in the User Object Class list alongside inetOrgPerson.
+
+attributetype ( 1.3.6.1.4.1.99999.1.1
+  NAME 'is-active'
+  DESC 'Indicates whether the account is active'
+  EQUALITY booleanMatch
+  SYNTAX 1.3.6.1.4.1.1466.115.121.1.7
+  SINGLE-VALUE )
+
+objectclass ( 1.3.6.1.4.1.99999.2.1
+  NAME 'accountStatus'
+  DESC 'Auxiliary class for account active/inactive flag'
+  SUP top
+  AUXILIARY
+  MAY ( is-active ) )

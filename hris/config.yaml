@@ -1,0 +1,124 @@
+version: v2
+log_level: INFO
+destination_type: HRIS
+# Default group type; each group row overrides it via its own group_type field.
+GROUP_TYPE: Department
+
+app:
+  name: LCM-Test-HRIS
+  hris_type: lcm_test
+  url: https://hris.example.com
+  datasource: lcm-test-hris
+  # Merged into the provider-create POST body, marking the provider as an LCM
+  # provisioning source. Only applied when the provider is first created.
+  options:
+    provisioning: true
+
+module_directory: ./modules
+logic_modules:
+  - lcm_test_hris_hooks
+  # Test-only harness: there is no real HRIS, so the mocks are always loaded.
+  - lcm_test_hris_mocks
+
+connections:
+  lcm_test_hris:
+    connection_type: custom
+    custom_module: lcm_test_hris
+    required_env:
+      - LCM_SCENARIO
+      - VEZA_URL_ALLOWLIST
+    params:
+      LCM_TEST_HRIS_BASE_URL: https://hris.example.com/api/v1
+
+sources:
+  employees:
+    destination: Employee
+    source_type: custom
+    connection: lcm_test_hris
+    params:
+      resource: /employees
+      resource_key: data
+    field_mapping:
+      # --- the 7 required Employee fields ---
+      unique_id:
+        destination_field: unique_id
+      employee_number:
+        destination_field: employee_number
+      full_name:
+        source_field: first_name
+        destination_field: name
+        transforms:
+          - name: jinja_render
+            options:
+              template: "{{ row.first_name }} {{ row.last_name }}"
+      first_name:
+        destination_field: first_name
+      last_name:
+        destination_field: last_name
+      employment_status:
+        destination_field: employment_status
+      is_active_derived:
+        source_field: employment_status
+        destination_field: is_active
+        transforms:
+          - name: jinja_render
+            options:
+              template: "{{ 'true' if row.employment_status == 'active' else 'false' }}"
+          - name: validate_boolean
+
+      # --- standard optional fields ---
+      email:
+        destination_field: email
+        transforms:
+          - name: lowercase
+      # The HRIS template's field for hire date is start_date.
+      hire_date:
+        destination_field: start_date
+        transforms:
+          - name: date_convert
+      termination_date:
+        destination_field: termination_date
+        transforms:
+          - name: date_convert
+      department:
+        destination_field: department
+      job_title:
+        destination_field: job_title
+      work_location:
+        destination_field: work_location
+      employment_types:
+        destination_field: employment_types
+      managers:
+        destination_field: managers
+      groups:
+        destination_field: groups
+
+      # --- custom properties ---
+      hire_date_prop:
+        source_field: hire_date
+        destination_field: hire_date
+        custom_type: TIMESTAMP
+      employment_type:
+        destination_field: employment_type
+        custom_type: STRING
+      is_test_account:
+        destination_field: is_test_account
+        custom_type: BOOLEAN
+      persona:
+        destination_field: persona
+        custom_type: STRING
+
+  groups:
+    destination: Group
+    source_type: custom
+    connection: lcm_test_hris
+    params:
+      resource: /groups
+      resource_key: data
+    field_mapping:
+      unique_id:
+        destination_field: unique_id
+      name:
+        destination_field: name
+      group_type:
+        destination_field: group_type
