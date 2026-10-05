@@ -96,7 +96,7 @@ scripts/
   install_deps.sh              Homebrew/Colima/docker bootstrap (make install)
   render_ldap_bootstrap.py    tree.yaml -> ldap/.generated/bootstrap.ldif
   verify.sh                    make verify
-third_party/
+oaa-hris/
   oaa-runner-internal/         git submodule; the HRIS push's Dockerfile/runit.sh come from here
 hris/                        the mock HRIS connector (see hris/README.md)
 ```
@@ -116,5 +116,5 @@ hris/                        the mock HRIS connector (see hris/README.md)
   tunnel to `*.vezacloud.com:443` — it isn't fixable from this repo.
 - **`make up` succeeds but `ldapsearch` doesn't show a `tree.yaml` edit**: run `make reset`, not
   `make up` — see Parameters above.
-- **Fresh clone, `hris` container build fails / `third_party/oaa-runner-internal` is empty**: run
+- **Fresh clone, `hris` container build fails / `oaa-hris/oaa-runner-internal` is empty**: run
   `git submodule update --init --recursive` (or re-run `make install`, which does this).

@@ -70,7 +70,7 @@ services:
   # `make hris-validate` / `make hris-run`.
   hris:
     build:
-      context: ./third_party/oaa-runner-internal
+      context: ./oaa-hris/oaa-runner-internal
       dockerfile: Dockerfile
     image: lcm-local-lab-hris:local
     volumes:
