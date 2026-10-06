@@ -37,6 +37,32 @@ def render_ou(name, base_dn):
     )
 
 
+def render_group(group, base_dn, valid_ous):
+    cn = group['cn']
+    ou = group.get('ou', 'Groups')
+    if ou not in valid_ous:
+        sys.exit(
+            f'group {cn!r} references ou {ou!r}, which is not listed in '
+            f'organizational_units in {TREE_CONFIG}'
+        )
+    dn = f'cn={cn},ou={ou},{base_dn}'
+    description = group.get('description')
+
+    lines = [
+        f'# group: {cn}\n',
+        f'dn: {dn}\n',
+        'changetype: add\n',
+        'objectClass: groupOfUniqueNames\n',
+        f'cn: {cn}\n',
+    ]
+    if description:
+        lines.append(f'description: {description}\n')
+    # groupOfUniqueNames MUST have >=1 uniqueMember; self-reference as a
+    # placeholder until LCM/Access Profiles add real members.
+    lines.append(f'uniqueMember: {dn}\n')
+    return ''.join(lines)
+
+
 def render_user(user, base_dn, domain, valid_ous):
     uid = user['uid']
     ou = user['ou']
@@ -73,13 +99,19 @@ def main():
 
     ous = tree.get('organizational_units') or []
     users = tree.get('users') or []
+    groups = tree.get('groups') or []
+    valid_ous = set(ous)
 
     entries = [render_ou(name, base_dn) for name in ous]
-    entries += [render_user(user, base_dn, domain, set(ous)) for user in users]
+    entries += [render_user(user, base_dn, domain, valid_ous) for user in users]
+    entries += [render_group(group, base_dn, valid_ous) for group in groups]
 
     OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
     OUTPUT_PATH.write_text('\n'.join(entries) + '\n')
-    print(f'wrote {OUTPUT_PATH} ({len(ous)} OUs, {len(users)} users, base DN {base_dn})')
+    print(
+        f'wrote {OUTPUT_PATH} ({len(ous)} OUs, {len(users)} users, '
+        f'{len(groups)} groups, base DN {base_dn})'
+    )
 
 
 if __name__ == '__main__':

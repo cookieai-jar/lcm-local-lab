@@ -126,11 +126,11 @@ it with this lab's specifics:
 | IDP Name | `LCM-Test-OpenLDAP` (or similar) | internal identifier only |
 | LDAP URL | `ldap://openldap:389` | `openldap` is the container hostname on the `ldap_network` Docker network the Insight Point shares with it; `LDAP_TLS=false` in `docker-compose.yml`, so no `ldaps://`/CA cert for this lab |
 | Users Base DN | `$LDAP_BASE_DN` (e.g. `dc=example,dc=org`) | covers every OU in `ldap/tree.yaml`, not just one |
-| Groups Base DN | same as Users Base DN | `ldap/tree.yaml` doesn't define any LDAP groups yet |
+| Groups Base DN | `ou=Groups,$LDAP_BASE_DN` | `ldap/tree.yaml` seeds its example groups (Engineering, Finance, VPN-Users) under this OU |
 | Bind DN or User | `cn=admin,$LDAP_BASE_DN` | osixia/openldap's auto-created admin account |
 | Bind Password | `$LDAP_ADMIN_PASSWORD` | from `.env` |
 | Users Object Class | `inetOrgPerson,accountStatus` | **both**, per the comment at the top of `ldap/custom.schema` — `accountStatus` is the AUXILIARY class carrying `is-active`; omitting it from this list means the connector's search filter won't match these users |
-| Groups Object Class | leave default (`groupOfUniqueNames`) | unused until `ldap/tree.yaml` defines groups |
+| Groups Object Class | leave default (`groupOfUniqueNames`) | matches the object class `ldap/tree.yaml`'s groups are seeded with |
 
 Click **Create Integration** and wait for the first extraction to succeed — required before this
 integration can be used as an LCM target.
@@ -238,7 +238,7 @@ re-syncing the same `title`/`departmentNumber` values a moment later is a no-op.
 | Trigger: Identity newly matches the condition | checked — fires once on the active → terminated transition (E1006) |
 | Action | **Deprovision Identity** — not Sync Identities |
 | Entity Type | LDAP User |
-| Remove all entitlements | unchecked for this lab — `ldap/tree.yaml` doesn't model groups yet |
+| Remove all entitlements | unchecked for this lab, pending Access Profile setup — revisit once leavers can actually hold group entitlements to remove |
 
 Deprovision Identity is Veza's dedicated disable action: it writes the LDAP integration's
 configured activation attribute to its configured inactive value (`is-active: FALSE`, per the

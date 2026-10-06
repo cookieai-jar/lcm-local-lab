@@ -14,6 +14,16 @@
 # - Do NOT add a cn=admin entry here — osixia/openldap creates it from
 #   LDAP_ADMIN_PASSWORD automatically, and a duplicate aborts the bootstrap
 #   import on first start.
+# - `groups` seeds LDAP groups for Veza's LDAP integration to discover (Groups
+#   Object Class groupOfUniqueNames, the integration's default) so they're
+#   available as entitlements when building Access Profiles. Unlike `users`,
+#   these ARE meant to be pre-seeded here — an Access Profile needs an existing
+#   group to grant membership to, so the group has to exist and be synced into
+#   Veza before the profile can reference it. Each group lands under the
+#   `Groups` OU. groupOfUniqueNames requires at least one uniqueMember by LDAP
+#   schema, so each group is seeded with itself as a placeholder member
+#   (harmless, and clearly not a real employee) until LCM/Access Profiles add
+#   real ones.
 # - After editing this file, run `make reset` (not just `make render`): osixia
 #   only applies bootstrap LDIF/schema on an empty database.
 
@@ -22,3 +32,12 @@ organizational_units:
   - Marketing   # example OU, otherwise unused — customize freely for your own org structure
   - Employees   # LCM provisioning target: every HRIS-synced user lands here, regardless
                 # of department (see hris/README.md's "Setting up the LCM policy" section)
+  - Groups      # holds the LDAP groups below, synced into Veza as Access Profile targets
+
+groups:
+  - cn: Engineering
+    description: Engineering team access
+  - cn: Finance
+    description: Finance team access
+  - cn: VPN-Users
+    description: Remote VPN access
