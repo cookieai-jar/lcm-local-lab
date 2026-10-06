@@ -4,10 +4,11 @@ A one-click local lab for testing Veza Lifecycle Management (LCM): a mock HRIS
 source of record (joiner/mover/leaver scenarios) feeding into an OpenLDAP target
 system, registered with your Veza tenant via a Veza Insight Point.
 
-```
-   hris/  ──push──▶  Veza tenant  ──LCM policy──▶  openldap (via insight_point)
-(mock HRIS,                                         (target system, tree shape
- oaa-runner)                                          set by ldap/tree.yaml)
+```mermaid
+flowchart LR
+    OAA["OAA Runner<br/>(hris/, mock HRIS)"] -->|push| Veza["Veza Tenant<br/>(HRIS source of record)"]
+    Veza -->|LCM policy| IP["Insight Point"]
+    IP -->|provision| LDAP["OpenLDAP<br/>(target, shape set by ldap/tree.yaml)"]
 ```
 
 Only Homebrew, Colima, and Docker are required on the host — the HRIS push and the
@@ -73,9 +74,10 @@ Everything environment-specific lives in two places:
 - **`.env`** — `VEZA_URL`/`VEZA_API_KEY`/`VEZA_URL_ALLOWLIST`/`DP_REGISTER_KEY` (which Veza tenant,
   and how the HRIS/Insight Point connect to it), plus `LDAP_BASE_DN`/`LDAP_DOMAIN`/
   `LDAP_ORGANISATION`/`LDAP_ADMIN_PASSWORD` (the LDAP server's identity) and `LCM_SCENARIO`.
-- **`ldap/tree.yaml`** — the actual OpenLDAP tree shape: organizational units and users. Edit this
-  to model a different org structure; the DNs are built from `LDAP_BASE_DN` at render time, so you
-  don't need to touch `LDAP_BASE_DN` and `tree.yaml` in sync by hand.
+- **`ldap/tree.yaml`** — the OpenLDAP tree shape: organizational units, starting empty of users by
+  design (the LCM Joiner workflow is what creates them — see `hris/README.md`). Edit this to model
+  a different org structure; the DNs are built from `LDAP_BASE_DN` at render time, so you don't
+  need to touch `LDAP_BASE_DN` and `tree.yaml` in sync by hand.
 
 After changing `ldap/tree.yaml` (or `LDAP_BASE_DN`/`LDAP_DOMAIN`), run `make reset` — osixia/openldap
 only applies bootstrap data on an empty database, so `make up` alone won't pick up the change on a

@@ -2,8 +2,14 @@
 # scripts/render_ldap_bootstrap.py (run via `make render`, part of `make up`).
 #
 # - Each name in organizational_units becomes `ou=<name>,$LDAP_BASE_DN`.
-# - Each user becomes an inetOrgPerson + accountStatus entry under its `ou`.
-#   `mail` defaults to "<uid>@$LDAP_DOMAIN" unless given explicitly.
+# - This lab deliberately seeds no users here. The whole point of the lab is
+#   that the LCM Joiner workflow is what creates user entries (under
+#   Employees, see below) from the mock HRIS — a pre-seeded user would just
+#   be test fixture data pretending to be something LCM already provisioned.
+#   `users` is still supported by the renderer/schema below if you want to
+#   seed out-of-band accounts for your own experiments, but this lab doesn't
+#   use it: each user becomes an inetOrgPerson + accountStatus entry under
+#   its `ou`; `mail` defaults to "<uid>@$LDAP_DOMAIN" unless given explicitly;
 #   `is_active` defaults to true unless set to false.
 # - Do NOT add a cn=admin entry here — osixia/openldap creates it from
 #   LDAP_ADMIN_PASSWORD automatically, and a duplicate aborts the bootstrap
@@ -12,32 +18,7 @@
 #   only applies bootstrap LDIF/schema on an empty database.
 
 organizational_units:
-  - IT
-  - Marketing
+  - IT          # example OU, otherwise unused — customize freely for your own org structure
+  - Marketing   # example OU, otherwise unused — customize freely for your own org structure
   - Employees   # LCM provisioning target: every HRIS-synced user lands here, regardless
                 # of department (see hris/README.md's "Setting up the LCM policy" section)
-
-users:
-  - uid: johndoe
-    cn: John Doe
-    sn: Doe
-    ou: IT
-    password: password123
-
-  - uid: anna.meier
-    cn: Anna Meier
-    sn: Meier
-    ou: IT
-    password: password456
-
-  - uid: bradonk13
-    cn: Brandon Koenigsknecht
-    sn: Koenigsknecht
-    ou: IT
-    password: Spring2026!
-
-  - uid: peter.schmidt
-    cn: Peter Schmidt
-    sn: Schmidt
-    ou: Marketing
-    password: password789

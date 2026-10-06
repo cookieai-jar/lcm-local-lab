@@ -5,10 +5,15 @@ destination_type: HRIS
 GROUP_TYPE: Department
 
 app:
-  name: LCM-Test-HRIS
+  # LCM_PROVIDER_SUFFIX lets each person disambiguate their provider in a
+  # shared Veza tenant (e.g. "-jw") without renaming it after creation in the
+  # console -- a rename changes the provider's external_id, so the next push
+  # no longer matches it by name and creates a duplicate instead of updating
+  # it. Set LCM_PROVIDER_SUFFIX once in .env *before* your first push.
+  name: LCM-Test-HRIS${LCM_PROVIDER_SUFFIX}
   hris_type: lcm_test
   url: https://hris.example.com
-  datasource: lcm-test-hris
+  datasource: lcm-test-hris${LCM_PROVIDER_SUFFIX}
   # Merged into the provider-create POST body, marking the provider as an LCM
   # provisioning source. Only applied when the provider is first created.
   options:

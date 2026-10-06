@@ -105,12 +105,15 @@ provider. If `LCM-Test-HRIS` already exists without `provisioning: true` (e.g. i
 an earlier `--no_push` experiment against an older `oaa-runner` version, or manually), it has to be
 deleted and re-created in the Veza console for this flag to apply.
 
-**Shared tenant note**: `config.yaml` always creates the provider as `LCM-Test-HRIS` — if several
-people share one Veza tenant (e.g. `your-tenant.vezacloud.com`), rename it after creation to disambiguate
-(e.g. `LCM-Test-HRIS-<your initials>`). Renaming in the console doesn't affect `provisioning: true`
-or anything else about the provider. When building the policy in step 4 below, select the provider
-under whatever name it actually has in your console, not necessarily the literal string
-`LCM-Test-HRIS`.
+**Shared tenant note**: if several people share one Veza tenant, set `LCM_PROVIDER_SUFFIX` in
+`.env` (e.g. `-jw` for your initials) **before your first push** — `config.yaml` interpolates it
+into both the provider name and `datasource`, so the provider is created disambiguated from the
+start (e.g. `LCM-Test-HRIS-jw`). Don't rename the provider in the console after the fact instead:
+a rename there doesn't change `provisioning: true`, but push-to-update matching relies on the name
+staying stable across runs, and a console rename can make the next push create a duplicate rather
+than update the existing provider. When building the policy in step 4 below, select the provider
+under whatever name it actually has in your console (plain `LCM-Test-HRIS` if you left
+`LCM_PROVIDER_SUFFIX` empty).
 
 ### 2. Register `openldap` as an LDAP integration
 
@@ -147,40 +150,103 @@ integration can be used as an LCM target.
    (matches the literal strings `scripts/render_ldap_bootstrap.py` writes — `is-active: TRUE` /
    `is-active: FALSE`.)
 
-### 4. Create the policy
+### 4. Create the policy, with separate Joiner, Mover, and Leaver workflows
 
 1. **LCM → Policies → Create Policy.**
 2. Name it (e.g. `LCM-Test: HRIS birthright → OpenLDAP`), and select your `LCM-Test-HRIS` provider
    (whatever it's actually named in your console — see the shared-tenant note above) as the
    **Primary Identity Source**.
-3. In the draft policy, open **Workflows → Create workflow** and add a **Sync Identities** action
-   mapping HRIS employee fields to LDAP attributes.
+3. In the draft policy's **Workflows** tab, create three separate workflows — one per lifecycle
+   event — rather than one workflow trying to do everything. This is Veza's recommended structure:
+   each workflow gets its own trigger condition and its own action, so a leaver can't accidentally
+   re-create an entry and a mover can't accidentally deactivate one.
 
 This lab uses **one fixed OU for every synced employee** regardless of department — the common
 real-world pattern unless an org is geographically distributed (region/country OUs), which this
 lab doesn't model. `ldap/tree.yaml` defines `Employees` for this; `IT`/`Marketing` are unrelated
-seed data used to smoke-test the rendering pipeline, not an LCM target.
+example OUs, not an LCM target. `ldap/tree.yaml` seeds **no users at all** — every LDAP entry that
+exists is one these workflows created, which is the point of the lab.
 
-In the Sync Identities action's **Action Synced Attributes**, map at least:
+Across all three workflows, trigger conditions are SCIM filter expressions over the HRIS fields
+`hris/config.yaml` maps (`is_active`, `employment_status`, `department`, `job_title`, …), and every
+Sync Identities / Deprovision Identity action uses the same **Action Unique Identifier**: `id` (the
+DN below) — HRIS's `unique_id`/`employee_number` isn't itself an LDAP identifier, so this DN
+Formatter is what ties a given employee to a given LDAP entry across runs and across workflows.
+
+#### Joiner — create or reactivate an entry
+
+| Setting | Value |
+|---|---|
+| Trigger: Identity matches this condition | `is_active eq true` |
+| Trigger: Identity newly matches the condition | checked — fires once on every false/absent → true transition, which covers both a brand-new hire (E1009) and a rehire (E1007's `rehire` scenario), not a separate fourth workflow |
+| Action | Sync Identities |
+| Don't create new users | unchecked — this workflow's whole job is to create the entry |
+| Update only on create or reactivate | checked — Joiner only writes attributes at creation/reactivation time; keeping this on is what stops Joiner and Mover from fighting over the same fields on every extraction |
+
+Action Synced Attributes (full population at creation time):
 
 | Destination attribute | Formatter (source → value) | Why |
 |---|---|---|
-| `id` (the DN) | `uid={employee_number},ou=Employees,dc=example,dc=org` | replace `dc=example,dc=org` with your actual `$LDAP_BASE_DN`; this is the only universally required attribute for LDAP user creation |
-| `uid` | `{employee_number}` | LDAP convention expects the entry to also carry the attribute matching its own RDN (see how `scripts/render_ldap_bootstrap.py` writes the seed users) |
+| `id` (the DN) | `uid={employee_number},ou=Employees,dc=example,dc=org` | replace `dc=example,dc=org` with your actual `$LDAP_BASE_DN`; the only universally required attribute for LDAP user creation |
+| `uid` | `{employee_number}` | LDAP convention expects the entry to also carry the attribute matching its own RDN |
 | `cn` | `{full_name}` | required by `inetOrgPerson` |
 | `sn` | `{last_name}` | required by `inetOrgPerson` |
 | `mail` | `{email}` | |
+| `title` | `{job_title}` | standard `organizationalPerson` attribute — no `custom.schema` change needed |
+| `departmentNumber` | `{department}` | standard `organizationalPerson` attribute — no `custom.schema` change needed |
 
-Set **Action Unique Identifier** to `id` (the DN) so re-runs match the same entry instead of
-creating duplicates — HRIS's `unique_id`/`employee_number` isn't itself an LDAP identifier, so the
-DN Formatter above is what ties a given employee to a given LDAP entry across runs.
+Not mapped here on purpose: `is-active`. Per Veza's LDAP provisioning docs, a Sync Identities
+action's create/reactivate path is itself one of the "activate" actions that writes the LDAP
+integration's configured activation attribute to its configured active value — so a newly created
+or rehired entry should get `is-active: TRUE` automatically from the **User Activation Detection**
+settings in step 3 above, with nothing extra to map. Verify this on your first dry run; if a newly
+created entry comes back without `is-active` set, add it explicitly here as a Boolean-formatted
+synced attribute instead. Also not yet verified empirically: whether a newly-created entry
+automatically gets the `accountStatus` auxiliary class (needed for `is-active` to be settable at
+all) from the integration's configured Users Object Class, or needs its own `objectClass` mapping —
+check this first if deactivation later fails on a newly-created user.
 
-Not yet verified empirically: whether a newly-created entry automatically gets the `accountStatus`
-auxiliary class (needed for `is-active` to be settable) just from the integration's configured
-Users Object Class, or whether `objectClass` needs its own explicit mapping here. Check this when
-you actually dry-run the workflow — if deactivation fails on a newly-created user, this is the
-first thing to check.
+#### Mover — update attributes on an existing, active entry
 
-4. Dry-run the workflow against a representative HRIS identity, publish the version, then
-   **LCM → Policies → (policy) → ⋮ → Enable**. Policies run on source extraction — a dry run does
-   not test LDAP connectivity.
+| Setting | Value |
+|---|---|
+| Trigger: Identity matches this condition | `is_active eq true` |
+| Trigger: Identity properties | Have changed → Specific properties: `department`, `job_title` |
+| Action | Sync Identities |
+| Don't create new users | checked — Mover only ever updates an entry Joiner already created; if it somehow ran first, skip rather than create a partial entry |
+| Update only on create or reactivate | unchecked — the opposite of Joiner: Mover's whole job is to push attribute changes to an already-active entry |
+
+Action Synced Attributes: just the attributes that can change — `title` and `departmentNumber`,
+same formatters as Joiner's above. (`id` stays as the Action Unique Identifier, not a synced
+attribute to recompute — an employee's DN doesn't move with them in this lab's one-OU design.)
+
+This same workflow also covers the `convert` scenario (E1003/E1004, FTE ↔ contractor): it's a
+`job_title` change on an already-active identity, same as a department move — no fourth workflow
+needed.
+
+One overlap to expect, not a bug: per Veza's Lifecycle Management FAQ, a brand-new identity has
+every property treated as "changed," so on a new hire's first extraction this Mover workflow's
+trigger properties are satisfied too, alongside Joiner's. That's harmless here — Mover's "Don't
+create new users" means it has nothing to do until the entry Joiner just created exists, and
+re-syncing the same `title`/`departmentNumber` values a moment later is a no-op.
+
+#### Leaver — deactivate without deleting
+
+| Setting | Value |
+|---|---|
+| Trigger: Identity matches this condition | `employment_status eq "terminated"` |
+| Trigger: Identity newly matches the condition | checked — fires once on the active → terminated transition (E1006) |
+| Action | **Deprovision Identity** — not Sync Identities |
+| Entity Type | LDAP User |
+| Remove all entitlements | unchecked for this lab — `ldap/tree.yaml` doesn't model groups yet |
+
+Deprovision Identity is Veza's dedicated disable action: it writes the LDAP integration's
+configured activation attribute to its configured inactive value (`is-active: FALSE`, per the
+**User Activation Detection** settings in step 3 above) and preserves the entry and its history,
+rather than deleting it (that's what the separate, much more destructive Delete Identity action is
+for — not used anywhere in this lab). This is what actually flips `is-active` for E1006; the
+previous single-workflow version of this lab didn't handle deactivation at all.
+
+4. Dry-run each of the three workflows against a representative HRIS identity, publish the
+   version, then **LCM → Policies → (policy) → ⋮ → Enable**. Policies run on source extraction — a
+   dry run does not test LDAP connectivity.

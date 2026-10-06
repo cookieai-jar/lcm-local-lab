@@ -14,7 +14,7 @@ echo "=== docker compose ps ==="
 docker compose ps
 
 echo ""
-echo "=== ldapsearch: every tree.yaml user, should all show is-active: TRUE ==="
+echo "=== ldapsearch: every user currently in LDAP (none until the Joiner workflow provisions one) ==="
 docker exec openldap ldapsearch -x -LLL \
     -H ldap://localhost \
     -D "cn=admin,${LDAP_BASE_DN}" \

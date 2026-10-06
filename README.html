@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <title>lcm-local-lab</title>
+            <style>
+/* From extension vscode.github */
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+.vscode-dark img[src$=\#gh-light-mode-only],
+.vscode-light img[src$=\#gh-dark-mode-only],
+.vscode-high-contrast:not(.vscode-high-contrast-light) img[src$=\#gh-light-mode-only],
+.vscode-high-contrast-light img[src$=\#gh-dark-mode-only] {
+	display: none;
+}
+
+</style>
+            <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex/dist/katex.min.css">
+<link href="https://cdn.jsdelivr.net/npm/katex-copytex@latest/dist/katex-copytex.min.css" rel="stylesheet" type="text/css">
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/markdown.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/highlight.css">
+<style>
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe WPC', 'Segoe UI', system-ui, 'Ubuntu', 'Droid Sans', sans-serif;
+                font-size: 14px;
+                line-height: 1.6;
+            }
+        </style>
+        <style>
+.task-list-item {
+    list-style-type: none;
+}
+
+.task-list-item-checkbox {
+    margin-left: -20px;
+    vertical-align: middle;
+    pointer-events: none;
+}
+</style>
+<style>
+:root {
+  --color-note: #0969da;
+  --color-tip: #1a7f37;
+  --color-warning: #9a6700;
+  --color-severe: #bc4c00;
+  --color-caution: #d1242f;
+  --color-important: #8250df;
+}
+
+</style>
+<style>
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-note: #2f81f7;
+    --color-tip: #3fb950;
+    --color-warning: #d29922;
+    --color-severe: #db6d28;
+    --color-caution: #f85149;
+    --color-important: #a371f7;
+  }
+}
+
+</style>
+<style>
+.markdown-alert {
+  padding: 0.5rem 1rem;
+  margin-bottom: 16px;
+  color: inherit;
+  border-left: .25em solid #888;
+}
+
+.markdown-alert>:first-child {
+  margin-top: 0
+}
+
+.markdown-alert>:last-child {
+  margin-bottom: 0
+}
+
+.markdown-alert .markdown-alert-title {
+  display: flex;
+  font-weight: 500;
+  align-items: center;
+  line-height: 1
+}
+
+.markdown-alert .markdown-alert-title .octicon {
+  margin-right: 0.5rem;
+  display: inline-block;
+  overflow: visible !important;
+  vertical-align: text-bottom;
+  fill: currentColor;
+}
+
+.markdown-alert.markdown-alert-note {
+  border-left-color: var(--color-note);
+}
+
+.markdown-alert.markdown-alert-note .markdown-alert-title {
+  color: var(--color-note);
+}
+
+.markdown-alert.markdown-alert-important {
+  border-left-color: var(--color-important);
+}
+
+.markdown-alert.markdown-alert-important .markdown-alert-title {
+  color: var(--color-important);
+}
+
+.markdown-alert.markdown-alert-warning {
+  border-left-color: var(--color-warning);
+}
+
+.markdown-alert.markdown-alert-warning .markdown-alert-title {
+  color: var(--color-warning);
+}
+
+.markdown-alert.markdown-alert-tip {
+  border-left-color: var(--color-tip);
+}
+
+.markdown-alert.markdown-alert-tip .markdown-alert-title {
+  color: var(--color-tip);
+}
+
+.markdown-alert.markdown-alert-caution {
+  border-left-color: var(--color-caution);
+}
+
+.markdown-alert.markdown-alert-caution .markdown-alert-title {
+  color: var(--color-caution);
+}
+
+</style>
+        
+        </head>
+        <body class="vscode-body vscode-light">
+            <span id="markdown-mermaid" aria-hidden="true" data-config="{&quot;darkModeTheme&quot;:&quot;vscode&quot;,&quot;lightModeTheme&quot;:&quot;vscode&quot;,&quot;maxTextSize&quot;:50000,&quot;clickDrag&quot;:&quot;alt&quot;,&quot;showControls&quot;:&quot;onHoverOrFocus&quot;,&quot;resizable&quot;:true,&quot;maxHeight&quot;:&quot;&quot;}"></span>
+				<h1 id="lcm-local-lab">lcm-local-lab</h1>
+<p>A one-click local lab for testing Veza Lifecycle Management (LCM): a mock HRIS
+source of record (joiner/mover/leaver scenarios) feeding into an OpenLDAP target
+system, registered with your Veza tenant via a Veza Insight Point.</p>
+<pre><code>   hris/  ──push──▶  Veza tenant  ──LCM policy──▶  openldap (via insight_point)
+(mock HRIS,                                         (target system, tree shape
+ oaa-runner)                                          set by ldap/tree.yaml)
+</code></pre>
+<p>Only Homebrew, Colima, and Docker are required on the host — the HRIS push and the
+LDAP bootstrap data generation both run as one-shot containers, not local Python.</p>
+<h2 id="quickstart">Quickstart</h2>
+<pre><code class="language-bash">git <span class="hljs-built_in">clone</span> --recurse-submodules &lt;this-repo-url&gt;
+<span class="hljs-built_in">cd</span> lcm-local-lab
+<span class="hljs-built_in">cp</span> .env.example .<span class="hljs-built_in">env</span> &amp;&amp; <span class="hljs-built_in">chmod</span> 600 .<span class="hljs-built_in">env</span>
+<span class="hljs-comment"># edit .env: fill in VEZA_URL, VEZA_API_KEY, DP_REGISTER_KEY, LDAP_ADMIN_PASSWORD</span>
+
+make install   <span class="hljs-comment"># Homebrew/Colima/docker/docker-compose if missing, submodules, start Colima</span>
+make up        <span class="hljs-comment"># render ldap/tree.yaml -&gt; bootstrap.ldif, bring up openldap + phpldapadmin + insight_point</span>
+make verify    <span class="hljs-comment"># smoke-check: compose ps, ldapsearch, phpLDAPadmin, insight_point logs</span>
+</code></pre>
+<p>Forgot to <code>--recurse-submodules</code>? <code>make install</code> also runs <code>git submodule update --init</code>.</p>
+<p>Then push HRIS scenarios (see <a href="hris/README.html">hris/README.md</a> for the full persona list and
+expected results):</p>
+<pre><code class="language-bash">make hris-validate
+make hris-run SCENARIO=baseline              <span class="hljs-comment"># local build only</span>
+make hris-run SCENARIO=baseline PUSH=<span class="hljs-literal">true</span>    <span class="hljs-comment"># push to VEZA_URL</span>
+</code></pre>
+<p>phpLDAPadmin: <a href="http://localhost:8081">http://localhost:8081</a> (login as <code>cn=admin,&lt;LDAP_BASE_DN&gt;</code>).</p>
+<h2 id="parameters">Parameters</h2>
+<p>Everything environment-specific lives in two places:</p>
+<ul>
+<li><strong><code>.env</code></strong> — <code>VEZA_URL</code>/<code>VEZA_API_KEY</code>/<code>VEZA_URL_ALLOWLIST</code>/<code>DP_REGISTER_KEY</code> (which Veza tenant,
+and how the HRIS/Insight Point connect to it), plus <code>LDAP_BASE_DN</code>/<code>LDAP_DOMAIN</code>/
+<code>LDAP_ORGANISATION</code>/<code>LDAP_ADMIN_PASSWORD</code> (the LDAP server's identity) and <code>LCM_SCENARIO</code>.</li>
+<li><strong><code>ldap/tree.yaml</code></strong> — the actual OpenLDAP tree shape: organizational units and users. Edit this
+to model a different org structure; the DNs are built from <code>LDAP_BASE_DN</code> at render time, so you
+don't need to touch <code>LDAP_BASE_DN</code> and <code>tree.yaml</code> in sync by hand.</li>
+</ul>
+<p>After changing <code>ldap/tree.yaml</code> (or <code>LDAP_BASE_DN</code>/<code>LDAP_DOMAIN</code>), run <code>make reset</code> — osixia/openldap
+only applies bootstrap data on an empty database, so <code>make up</code> alone won't pick up the change on a
+stack that's already been initialized once.</p>
+<h2 id="layout">Layout</h2>
+<pre><code>.env.example              copy to .env — see Parameters above
+docker-compose.yml          openldap, phpldapadmin, insight_point (long-running)
+                             + renderer, hris (one-shot, profile &quot;tools&quot;)
+Makefile                    install / render / up / down / reset / verify / hris-validate / hris-run / clean
+ldap/
+  tree.yaml                  edit this to change the LDAP org structure
+  custom.schema               defines the is-active attribute + accountStatus objectClass
+  .generated/                 gitignored; render output
+scripts/
+  install_deps.sh              Homebrew/Colima/docker bootstrap (make install)
+  render_ldap_bootstrap.py    tree.yaml -&gt; ldap/.generated/bootstrap.ldif
+  verify.sh                    make verify
+third_party/
+  oaa-runner-internal/         git submodule; the HRIS push's Dockerfile/runit.sh come from here
+hris/                        the mock HRIS connector (see hris/README.md)
+</code></pre>
+<h2 id="troubleshooting">Troubleshooting</h2>
+<ul>
+<li><strong>No sudo / Homebrew installer fails with &quot;Insufficient permissions to install Homebrew to
+/opt/homebrew&quot;</strong>: <code>install_deps.sh</code> falls back to installing Homebrew into <code>$HOME/homebrew</code>
+instead (no sudo required). Add <code>export PATH=&quot;$HOME/homebrew/bin:$PATH&quot;</code> to your shell profile
+afterward so <code>brew</code>/<code>colima</code>/<code>docker</code> keep working in new terminal sessions.</li>
+<li><strong>Insight Point registers (logs show an <code>edp_id</code> and &quot;Successfully reported info to control
+plane&quot;) but still shows offline in the Veza console</strong>: check <code>docker logs insight_point</code> for a
+repeating <code>tunnel_client.go ... rpc error: code = Unavailable ... failed to read frame header: EOF</code> pattern, reconnecting every couple of minutes. That's a corporate proxy/firewall (e.g.
+Zscaler) killing the long-lived gRPC/HTTP2 tunnel the console relies on for the online indicator,
+while short HTTPS calls still succeed. This needs a network-team exception for that persistent
+tunnel to <code>*.vezacloud.com:443</code> — it isn't fixable from this repo.</li>
+<li><strong><code>make up</code> succeeds but <code>ldapsearch</code> doesn't show a <code>tree.yaml</code> edit</strong>: run <code>make reset</code>, not
+<code>make up</code> — see Parameters above.</li>
+<li><strong>Fresh clone, <code>hris</code> container build fails / <code>third_party/oaa-runner-internal</code> is empty</strong>: run
+<code>git submodule update --init --recursive</code> (or re-run <code>make install</code>, which does this).</li>
+</ul>
+
+            <script async src="https://cdn.jsdelivr.net/npm/katex-copytex@latest/dist/katex-copytex.min.js"></script>
+            
+        </body>
+        </html>

@@ -80,6 +80,7 @@ services:
       - VEZA_URL
       - VEZA_URL_ALLOWLIST
       - LCM_SCENARIO
+      - LCM_PROVIDER_SUFFIX
       - MOCK_RESULTS
     profiles:
       - tools
