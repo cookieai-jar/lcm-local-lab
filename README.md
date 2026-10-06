@@ -14,6 +14,11 @@ flowchart LR
 Only Homebrew, Colima, and Docker are required on the host — the HRIS push and the
 LDAP bootstrap data generation both run as one-shot containers, not local Python.
 
+**Built and tested on macOS only.** `install_deps.sh` and the Quickstart below assume Homebrew +
+Colima as the Docker backend; nothing in this repo has been run on Linux or Windows, and either
+would need its own Docker setup (e.g. Docker Desktop, or Linux's native `dockerd`) in place of
+Colima at minimum.
+
 ## One-time setup: create a Veza Insight Point
 
 `DP_REGISTER_KEY` (needed for `.env`, below) comes from a Veza Insight Point you
